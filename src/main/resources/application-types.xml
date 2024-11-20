@@ -1,0 +1,27 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="test-data-type" format="json">
+      <types:shape format="weave" example="examples/gim_payload.json"><![CDATA[%dw 2.0
+
+type test_data_type = {|
+  RequestNumber: String, 
+  Date: String, 
+  User: String, 
+  Notes: String, 
+  State: Number {"typeId": "int"}
+|} {"example": "{\\\"RequestNumber\\\":\\\"500UD000009SVlGYAW\\\",\\\"Date\\\":\\\"2024-05-24T12:43:00.000Z\\\",\\\"User\\\":\\\"RALVES\\\",\\\"Notes\\\":\\\"mais ddd\\\",\\\"State\\\":4}"}
+
+]]></types:shape>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#f689fdca-95e1-4a50-be2c-d4ec52606973">
+    <types:processor-declaration>
+      <types:output-event>
+        <types:message>
+          <types:payload type="test-data-type"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+</types:mule>

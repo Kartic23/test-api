@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="b3837889-e3da-41ca-b273-f9fc50e2b013" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="aebccb6e-1f34-46fb-ae08-571abf8fa687">
+		<http:request-connection host="#[Mule::p('host_boc')]" port="#[Mule::p('port_boc')]" protocol="HTTPS">
+			<tls:context >
+				<tls:trust-store insecure="true" />
+			</tls:context>
+		</http:request-connection>
+	</http:request-config>
+	<global-property doc:name="Global Property" doc:id="97ae4fdb-0930-48c8-b539-8d3aa49255be" name="path_gim_token" value="/api/Authentication" />
+	<global-property doc:name="Global Property" doc:id="ade4e593-1d90-4046-9ecd-23a370efe507" name="host_gim" value="gimservices.qua.operacoes.brisa.pt" />
+	<global-property doc:name="Global Property" doc:id="2bf382ea-9d60-40d0-96d1-d71f367f0159" name="method_gim_token" value="POST" />
+	<global-property doc:name="Global Property" doc:id="8eae9122-838f-4e76-b1c1-94125d38cb9c" name="port_gim" value="443" />
+	<http:request-config name="HTTP_Request_configuration1" doc:name="HTTP Request configuration" doc:id="2d9bbe3b-4618-4173-b3fe-8b84cc1f1363" >
+		<http:request-connection protocol="HTTPS" host="#[Mule::p('host_gim')]" port="#[Mule::p('port_gim')]" >
+			<tls:context >
+				<tls:trust-store insecure="true" />
+			</tls:context>
+		</http:request-connection>
+	</http:request-config>
+	<global-property doc:name="Global Property" doc:id="607a3998-7306-421c-8be8-f9b148457adf" name="host_boc" value="uno.qua.brisa.pt" />
+	<global-property doc:name="Global Property" doc:id="6940c00c-cb3c-4a8c-99e8-2c836ba64f99" name="port_boc" value="443" />
+	<global-property doc:name="Global Property" doc:id="665f65a3-a95d-4d69-a75f-23439af29eb0" name="method_boc" value="POST" />
+	<global-property doc:name="Global Property" doc:id="70716761-e1e2-4a54-bb23-24f0981e0505" name="path_boc" value="/BoC_IBrisa/rest/CriaEventoIncidencia/EventoIncidencia" />
+	<global-property doc:name="Global Property" doc:id="5f539df4-95b0-4dff-b323-76a235511a88" name="path_gim" value="/api/gim/SetRequestStateByRequestNumber" />
+	<global-property doc:name="Global Property" doc:id="47eaff10-1656-4984-815b-2581d8cb2ee3" name="method_gim_create" value="POST" />
+	<global-property doc:name="Global Property" doc:id="29cbbf8d-a78a-46c6-8208-3a972bbecb5c" name="path_gim_create" value="/api/gim/SetRequestStateByRequestNumber" />
+	<flow name="test-api-gim-flow" doc:id="1804f6a5-221c-466f-8766-018a01f06a2f" >
+		<http:listener doc:name="Listener" doc:id="0fedd3d2-9b5e-48b3-9b8c-d31c183b4530" config-ref="HTTP_Listener_config" path="/gim" allowedMethods="POST"/>
+		<logger level="INFO" doc:name="Logger" doc:id="bbb8e254-a327-438e-bdeb-8d206025d3b4" message="#[payload]"/>
+		<http:request method="#[Mule::p('method_gim_token')]" doc:name="Request" doc:id="161d36df-df34-4f87-adc3-fe4d2c0538d3" config-ref="HTTP_Request_configuration1" path="#[Mule::p('path_gim_token')]" target="gimToken"/>
+		<logger level="INFO" doc:name="Logger" doc:id="836125f9-62d8-43f0-b840-457b24bd5816" message="#[vars.gimToken]"/>
+		<ee:transform doc:name="Transform Message" doc:id="f689fdca-95e1-4a50-be2c-d4ec52606973" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "RequestNumber": payload.RequestNumberer,
+  "Date": "2024-05-24T12:43:00.000Z",
+  "User": "RALVES",
+  "Notes": "mais info",
+  "State": 6
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="#[Mule::p('method_gim_create')]" doc:name="Request" doc:id="f2f1374c-9373-4c88-9d5e-4cbd95ca56ae" config-ref="HTTP_Request_configuration1" path="#[Mule::p('path_gim_create')]">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer " ++ vars.gimToken.accessToken
+}]]]></http:headers>
+		</http:request>
+		<logger level="INFO" doc:name="Logger" doc:id="f11a4665-1c6b-4e67-a650-49caec411780" message="#[payload]"/>
+	</flow>
+	<flow name="test-api-boc-flow" doc:id="48c87dd1-8b01-4fb7-935d-aff4d0777bcb" >
+		<http:listener doc:name="Listener" doc:id="6feaf024-393c-4944-b194-5a52d18d1f1b" config-ref="HTTP_Listener_config" path="/boc" allowedMethods="POST" />
+		<logger level="INFO" doc:name="Logger" doc:id="9012ba4f-14b2-495a-abe6-50b0ee6f410a" message="#[payload]" />
+		<http:request method="#[Mule::p('method_boc')]" doc:name="Request" doc:id="1fe6c2a9-d656-4b76-9fe3-0547c42783a0" config-ref="HTTP_Request_configuration" path="#[Mule::p('path_boc')]" >
+			<http:headers ><![CDATA[#[import * from dw::core::Binaries
+output application/java
+---
+{
+	"NumeroProcesso" : "dsf",
+	"TipoEvento": 3,
+	"TipoAnexo": 0,
+	"TipodeDocumento": 0,
+	"Authorization": "Basic Qm9jX0licmlzYTp1ZDc2PTE3VFNhZSY="
+}]]]></http:headers>
+		</http:request>
+		<logger level="INFO" doc:name="Logger1" doc:id="d4436a1b-9a75-423b-b846-6289a385f870" message="#[payload]" />
+	</flow>
+</mule>
